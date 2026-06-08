@@ -1,0 +1,14 @@
+title: Cash Application Foundry IQ
+description: AI-powered accounts receivable reconciliation with enterprise knowledge retrieval
+theme: jekyll-theme-slate
+show_downloads: false
+
+# Navigation
+nav_order: 1
+permalink: /:path/
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
