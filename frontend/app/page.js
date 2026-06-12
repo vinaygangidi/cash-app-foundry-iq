@@ -818,69 +818,33 @@ export default function Home() {
         body: JSON.stringify({ bank_data: bankData, ar_data: arData }),
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        addLog(`Backend error (${res.status}): ${text.slice(0, 100)}`, "#ef4444");
-        setLoading(false);
-        return;
-      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-      if (!res.body) {
-        addLog("No response body from backend", "#ef4444");
-        setLoading(false);
-        return;
-      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop();
 
-      try {
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let streamDone = false;
-
-        while (!streamDone) {
-          const { value, done } = await reader.read();
-          if (done) {
+        for (const part of parts) {
+          if (!part.startsWith("data: ")) continue;
+          const raw = part.slice(6).trim();
+          if (raw === "[DONE]") {
             addLog("All agents complete", "#4ade80");
             setLoading(false);
             break;
           }
-          if (value) {
-            buffer += decoder.decode(value, { stream: true });
-            const parts = buffer.split("\n\n");
-            buffer = parts.pop() || "";
-
-            for (const part of parts) {
-              if (!part || !part.startsWith("data: ")) continue;
-              const raw = part.slice(6).trim();
-              if (raw === "[DONE]") {
-                addLog("All agents complete", "#4ade80");
-                setLoading(false);
-                streamDone = true;
-                break;
-              }
-              if (raw) {
-                try {
-                  const ev = JSON.parse(raw);
-                  try {
-                    handleEvent(ev);
-                  } catch (handleErr) {
-                    console.error("handleEvent error:", handleErr, ev);
-                  }
-                } catch (parseErr) {
-                  console.warn("Parse error:", parseErr, raw.slice(0, 50));
-                }
-              }
-            }
-          }
+          try {
+            const ev = JSON.parse(raw);
+            handleEvent(ev);
+          } catch (_) {}
         }
-      } catch (streamErr) {
-        console.error("Stream read error:", streamErr);
-        throw streamErr;
       }
     } catch (e) {
-      console.error("runAnalysis error:", e);
-      const errorMsg = e instanceof Error ? e.message : (e ? String(e) : "Unknown error");
-      addLog(`Error: ${errorMsg || "undefined"}`, "#ef4444");
+      addLog(`Error: ${e.message}`, "#ef4444");
     } finally {
       setLoading(false);
     }
