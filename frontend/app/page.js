@@ -866,7 +866,11 @@ export default function Home() {
               if (raw) {
                 try {
                   const ev = JSON.parse(raw);
-                  handleEvent(ev);
+                  try {
+                    handleEvent(ev);
+                  } catch (handleErr) {
+                    console.error("handleEvent error:", handleErr, ev);
+                  }
                 } catch (parseErr) {
                   console.warn("Parse error:", parseErr, raw.slice(0, 50));
                 }
