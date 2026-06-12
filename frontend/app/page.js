@@ -810,9 +810,11 @@ export default function Home() {
     setFinalResult(null);
 
     addLog("Starting Azure AI Foundry pipeline...", "#60a5fa");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+    addLog(`Using API: ${apiUrl}`, "#94a3b8");
 
     try {
-      const res = await fetch("/api/analyze", {
+      const res = await fetch(`${apiUrl}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bank_data: bankData, ar_data: arData }),
