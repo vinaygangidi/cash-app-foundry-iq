@@ -868,8 +868,9 @@ export default function Home() {
         }
       }
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      addLog(`Error: ${errorMsg}`, "#ef4444");
+      console.error("runAnalysis error:", e);
+      const errorMsg = e instanceof Error ? e.message : (e ? String(e) : "Unknown error");
+      addLog(`Error: ${errorMsg || "undefined"}`, "#ef4444");
     } finally {
       setLoading(false);
     }
