@@ -836,36 +836,47 @@ export default function Home() {
         return;
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let streamDone = false;
+      try {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let streamDone = false;
 
-      while (!streamDone) {
-        const { value, done } = await reader.read();
-        if (done) {
-          addLog("All agents complete", "#4ade80");
-          setLoading(false);
-          break;
-        }
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop();
-
-        for (const part of parts) {
-          if (!part.startsWith("data: ")) continue;
-          const raw = part.slice(6).trim();
-          if (raw === "[DONE]") {
+        while (!streamDone) {
+          const { value, done } = await reader.read();
+          if (done) {
             addLog("All agents complete", "#4ade80");
             setLoading(false);
-            streamDone = true;
             break;
           }
-          try {
-            const ev = JSON.parse(raw);
-            handleEvent(ev);
-          } catch (_) {}
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop() || "";
+
+            for (const part of parts) {
+              if (!part || !part.startsWith("data: ")) continue;
+              const raw = part.slice(6).trim();
+              if (raw === "[DONE]") {
+                addLog("All agents complete", "#4ade80");
+                setLoading(false);
+                streamDone = true;
+                break;
+              }
+              if (raw) {
+                try {
+                  const ev = JSON.parse(raw);
+                  handleEvent(ev);
+                } catch (parseErr) {
+                  console.warn("Parse error:", parseErr, raw.slice(0, 50));
+                }
+              }
+            }
+          }
         }
+      } catch (streamErr) {
+        console.error("Stream read error:", streamErr);
+        throw streamErr;
       }
     } catch (e) {
       console.error("runAnalysis error:", e);
