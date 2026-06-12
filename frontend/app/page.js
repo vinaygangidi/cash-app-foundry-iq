@@ -838,7 +838,11 @@ export default function Home() {
 
       while (!streamDone) {
         const { value, done } = await reader.read();
-        if (done) break;
+        if (done) {
+          addLog("All agents complete", "#4ade80");
+          setLoading(false);
+          break;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split("\n\n");
         buffer = parts.pop();
