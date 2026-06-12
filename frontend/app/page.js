@@ -778,8 +778,13 @@ export default function Home() {
   const [selectedSample, setSelectedSample] = useState("01");
   const [sampleList, setSampleList] = useState([]);
 
+  const getApiUrl = (path) => {
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+    return `${base}${path}`;
+  };
+
   useEffect(() => {
-    fetch("/api/samples").then(r => r.json()).then(d => setSampleList(d.samples || [])).catch(() => {});
+    fetch(getApiUrl("/samples")).then(r => r.json()).then(d => setSampleList(d.samples || [])).catch(() => {});
   }, []);
 
   function handleWqAction(txn_id, action) {
@@ -791,7 +796,7 @@ export default function Home() {
 
   async function loadDemoData(sampleId) {
     const id = sampleId || selectedSample;
-    const res = await fetch(`/api/demo-data?sample=${id}`);
+    const res = await fetch(getApiUrl(`/demo-data?sample=${id}`));
     const d = await res.json();
     setBankData(d.bank_statement);
     setArData(d.open_ar);
@@ -810,11 +815,9 @@ export default function Home() {
     setFinalResult(null);
 
     addLog("Starting Azure AI Foundry pipeline...", "#60a5fa");
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
-    addLog(`Using API: ${apiUrl}`, "#94a3b8");
 
     try {
-      const res = await fetch(`${apiUrl}/api/analyze`, {
+      const res = await fetch(getApiUrl("/analyze"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bank_data: bankData, ar_data: arData }),
