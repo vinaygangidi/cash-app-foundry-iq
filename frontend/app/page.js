@@ -818,11 +818,25 @@ export default function Home() {
         body: JSON.stringify({ bank_data: bankData, ar_data: arData }),
       });
 
+      if (!res.ok) {
+        const text = await res.text();
+        addLog(`Backend error (${res.status}): ${text.slice(0, 100)}`, "#ef4444");
+        setLoading(false);
+        return;
+      }
+
+      if (!res.body) {
+        addLog("No response body from backend", "#ef4444");
+        setLoading(false);
+        return;
+      }
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let streamDone = false;
 
-      while (true) {
+      while (!streamDone) {
         const { value, done } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
@@ -835,6 +849,7 @@ export default function Home() {
           if (raw === "[DONE]") {
             addLog("All agents complete", "#4ade80");
             setLoading(false);
+            streamDone = true;
             break;
           }
           try {
@@ -844,7 +859,8 @@ export default function Home() {
         }
       }
     } catch (e) {
-      addLog(`Error: ${e.message}`, "#ef4444");
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      addLog(`Error: ${errorMsg}`, "#ef4444");
     } finally {
       setLoading(false);
     }
